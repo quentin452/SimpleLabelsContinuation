@@ -83,7 +83,7 @@ public class TileLabel extends TileEntity
 			dsu.setStoredItemCount(stored.stackSize - extractAmount);
 
 			this.clickTime = this.worldObj.getTotalWorldTime();
-			
+
 			return true;
 		}
 		return false;
@@ -163,11 +163,14 @@ public class TileLabel extends TileEntity
 		return this.placedDirection;
 	}
 
-	private IDeepStorageUnit getDSU()
-	{
-		return (IDeepStorageUnit) this.worldObj.getTileEntity(this.xCoord - dsuDirection.offsetX, this.yCoord - dsuDirection.offsetY, this.zCoord
-				- dsuDirection.offsetZ);
-	}
+
+    private IDeepStorageUnit getDSU() {
+        TileEntity tileEntity = this.worldObj.getTileEntity(this.xCoord - dsuDirection.offsetX, this.yCoord - dsuDirection.offsetY, this.zCoord - dsuDirection.offsetZ);
+        if (tileEntity instanceof IDeepStorageUnit) {
+            return (IDeepStorageUnit) tileEntity;
+        }
+        return null;
+    }
 
 	public boolean hasDSU()
 	{
