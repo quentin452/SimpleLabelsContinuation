@@ -14,7 +14,5 @@ public class CommonProxy {
 			playerMP.sendContainerToPlayer(playerMP.inventoryContainer);
 		}
 	}
-	
-	public void initModels() {}
 
 }

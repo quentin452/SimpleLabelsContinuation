@@ -2,47 +2,59 @@ package com.insane.simplelabels.client;
 
 import java.awt.Color;
 
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.OpenGlHelper;
+import net.minecraft.client.renderer.RenderBlocks;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.world.EnumSkyBlock;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.IIcon;
+import net.minecraft.world.IBlockAccess;
+import net.minecraftforge.client.IItemRenderer;
+import net.minecraftforge.common.util.ForgeDirection;
+
+import com.insane.simplelabels.block.BlockLabel;
 import com.insane.simplelabels.tile.TileLabel;
 
+import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 
 import static org.lwjgl.opengl.GL11.*;
 
-public class RenderLabel extends TileEntitySpecialRenderer<TileLabel>
+public class RenderLabel extends TileEntitySpecialRenderer implements ISimpleBlockRenderingHandler, IItemRenderer
 {
-    //private static RenderItem renderItem = new RenderItem(Minecraft.getMinecraft().getTextureManager(), Minecraft.getMinecraft().getRenderItem());
+    private static RenderItem renderItem = new RenderItem();
 
     @Override
-    public void renderTileEntityAt(TileLabel te, double x, double y, double z, float f, int stage)
+    public void renderTileEntityAt(TileEntity tile, double x, double y, double z, float f)
     {
+        TileLabel te = (TileLabel) tile;
+        Minecraft mc = Minecraft.getMinecraft();
+
         ItemStack stack = te.getLabelStack(false);
         if (stack!= null)
         {
-            GlStateManager.pushMatrix();
+            glPushMatrix();
             glPushAttrib(GL_LIGHTING_BIT);
-            
             // Enable flags needed for item renders
-            GlStateManager.disableBlend();
-            GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            GlStateManager.disableLighting();
-            GlStateManager.enableCull();
-            
-            
+            glDisable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glDisable(GL_LIGHTING);
+            glEnable(GL_CULL_FACE);
             
             float inset = 0.5f - 0.0101f;
             
-            EnumFacing side = te.getDsuDirection();
+            ForgeDirection side = te.getDsuDirection();
 
-            int ambientLight = te.getWorld().getLightFor(EnumSkyBlock.BLOCK, te.getPos().add(side.getFrontOffsetX(),  side.getFrontOffsetY(),  side.getFrontOffsetZ()));
+            // Fix lighting pos
+            int ambientLight = tile.getWorldObj().getLightBrightnessForSkyBlocks(tile.xCoord + side.offsetX, tile.yCoord + side.offsetY,
+                    tile.zCoord + side.offsetZ, 0);
             int lightX = ambientLight % 65536;
             int lightY = ambientLight / 65536;
             float mult = 1.0F;
-            //OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, lightX * mult, lightY * mult);
+            OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, lightX * mult, lightY * mult);
             
             // Move to the block
             glTranslated(x + 0.5, y + 0.5, z + 0.5);
@@ -51,28 +63,28 @@ public class RenderLabel extends TileEntitySpecialRenderer<TileLabel>
 
             // Rotate it for the face we are rendering on
             rotateToDir(te.getDsuDirection());
-            if (te.getDsuDirection() == EnumFacing.DOWN || te.getDsuDirection() == EnumFacing.UP)
+            if (te.getDsuDirection() == ForgeDirection.DOWN || te.getDsuDirection() == ForgeDirection.UP)
             	rotateText(te.getPlacedDirection());
-            GlStateManager.translate(-0.2f, -0.15f, inset);
+            glTranslatef(-0.2f, -0.15f, inset);
 
             // Flatten and invert it
-            GlStateManager.scale(0.025f, 0.025f, -0.0001f);
+            glScalef(0.025f, 0.025f, -0.0001f);
 
             // Render the item
-            Minecraft.getMinecraft().getRenderItem().renderItemIntoGUI(te.getLabelStack(true), 0, 0);
+            renderItem.renderItemIntoGUI(mc.fontRenderer, mc.getTextureManager(), te.getLabelStack(true), 0, 0);
 
             // Clean up
 
-            GlStateManager.popMatrix();
+            glPopMatrix();
 
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(x + 0.5, y + 0.5, z + 0.5);
-            GlStateManager.rotate(180, 0, 0, 1);
+            glPushMatrix();
+            glTranslated(x + 0.5, y + 0.5, z + 0.5);
+            glRotatef(180, 0, 0, 1);
             rotateToDir(te.getDsuDirection());
-            if (te.getDsuDirection() == EnumFacing.DOWN || te.getDsuDirection() == EnumFacing.UP)
+            if (te.getDsuDirection() == ForgeDirection.DOWN || te.getDsuDirection() == ForgeDirection.UP)
             	rotateText(te.getPlacedDirection());
-            GlStateManager.translate(0.0075f, -0.25f, inset);
-            GlStateManager.scale(0.011f, 0.011f, 0.11f);
+            glTranslated(0.0075f, -0.25f, inset);
+            glScalef(0.011f, 0.011f, 0.11f);
             int overflow = 0;
             if (stack.stackSize < 0) {
                 overflow = Integer.MAX_VALUE + stack.stackSize + 1;
@@ -93,34 +105,35 @@ public class RenderLabel extends TileEntitySpecialRenderer<TileLabel>
             }
             int leftover = (stack.stackSize - (stacks * maxStack)) + overflow;
             String str = stacksStr + "*" + maxStack + " + " + leftover;
-            int stringWidth = this.getFontRenderer().getStringWidth(str);
-            this.getFontRenderer().drawString(str, -(stringWidth / 2), 0, Color.BLACK.getRGB());
-            GlStateManager.translate(-0.75f, -0.5f, -0.023f);
-            this.getFontRenderer().drawString(str, -(stringWidth / 2), 0, Color.WHITE.getRGB());
-            GlStateManager.popMatrix();
+            int stringWidth = this.func_147498_b().getStringWidth(str);
+            this.func_147498_b().drawString(str, -(stringWidth / 2), 0, Color.BLACK.getRGB());
+            glTranslatef(-0.75f, -0.5f, -0.01f);
+            this.func_147498_b().drawString(str, -(stringWidth / 2), 0, Color.WHITE.getRGB());
+            glPopMatrix();
 
-            GlStateManager.popAttrib();
+            glPopAttrib();
         }
     }
 
-    private void rotateToDir(EnumFacing dsuDirection)
+    private void rotateToDir(ForgeDirection dsuDirection)
     {
         switch (dsuDirection)
         {
         case EAST:
-            GlStateManager.rotate(90, 0, 1, 0);
+            glRotatef(90, 0, 1, 0);
             break;
         case SOUTH:
-        	GlStateManager.rotate(180, 0, 1, 0);
+            glRotatef(180, 0, 1, 0);
             break;
         case WEST:
-        	GlStateManager.rotate(-90, 0, 1, 0);
+            glRotatef(-90, 0, 1, 0);
             break;
         case UP:
-        	GlStateManager.rotate(-90, 1, 0, 0);
+            glRotatef(-90, 1, 0, 0);
+            //glRotatef(90, 0, 0, 1);
             break;
         case DOWN:
-        	GlStateManager.rotate(90, 1, 0, 0);
+            glRotatef(90, 1, 0, 0);
             break;
         default:
             break;
@@ -132,18 +145,18 @@ public class RenderLabel extends TileEntitySpecialRenderer<TileLabel>
     	switch (direction)
     	{
     	case 0:
-    		GlStateManager.rotate(180, 0, 0, 1);
+    		glRotatef(180, 0, 0, 1);
     		break;
     		
     	case 1:
-    		GlStateManager.rotate(-90, 0, 0, 1);
+    		glRotatef(-90, 0, 0, 1);
     		break;
     	
     	case 2:
     		break;
     		
     	case 3:
-    		GlStateManager.rotate(90, 0, 0, 1);
+    		glRotatef(90, 0, 0, 1);
     		break;
 
     	default:
@@ -151,7 +164,44 @@ public class RenderLabel extends TileEntitySpecialRenderer<TileLabel>
     	}
     }
 
-    /*@Override
+    @Override
+    public void renderInventoryBlock(Block block, int metadata, int modelId, RenderBlocks renderer)
+    {
+        ;
+    }
+
+    @Override
+    public boolean renderWorldBlock(IBlockAccess world, int x, int y, int z, Block block, int modelId, RenderBlocks renderer)
+    {
+        renderer.renderStandardBlock(block, x, y, z);
+        return true;
+    }
+
+    @Override
+    public boolean shouldRender3DInInventory(int modelId)
+    {
+        return false;
+    }
+
+    @Override
+    public int getRenderId()
+    {
+        return BlockLabel.renderId;
+    }
+    
+    @Override
+    public boolean handleRenderType(ItemStack item, ItemRenderType type)
+    {
+        return type == ItemRenderType.INVENTORY;
+    }
+
+    @Override
+    public boolean shouldUseRenderHelper(ItemRenderType type, ItemStack item, ItemRendererHelper helper)
+    {
+        return false;
+    }
+
+    @Override
     public void renderItem(ItemRenderType type, ItemStack item, Object... data)
     {
         Tessellator tes = Tessellator.instance;
@@ -172,5 +222,5 @@ public class RenderLabel extends TileEntitySpecialRenderer<TileLabel>
         tes.addVertexWithUV(BlockLabel.BOUNDS_MAX, BlockLabel.BOUNDS_MIN, 0, uEnd, vStart);
         tes.draw();
         glPopMatrix();
-    }*/
+    }
 }

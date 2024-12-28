@@ -4,13 +4,13 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 import com.insane.simplelabels.tile.TileLabel;
+
+import cpw.mods.fml.common.network.ByteBufUtils;
+import cpw.mods.fml.common.network.simpleimpl.IMessage;
+import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
+import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 
 public class MessageLabelUpdate implements IMessage {
 
@@ -57,7 +57,7 @@ public class MessageLabelUpdate implements IMessage {
 		@Override
 		public IMessage onMessage(MessageLabelUpdate message, MessageContext ctx)
 		{
-			TileEntity te =  Minecraft.getMinecraft().theWorld.getTileEntity(new BlockPos(message.x, message.y, message.z));
+			TileEntity te =  Minecraft.getMinecraft().theWorld.getTileEntity(message.x, message.y, message.z);
 			if (te != null && te instanceof TileLabel)
 			{
 				((TileLabel) te).setLabelStack(message.storedStack);

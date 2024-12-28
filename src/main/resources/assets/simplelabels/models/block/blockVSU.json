@@ -1,8 +1,0 @@
-{
-    "parent": "block/cube_bottom_top",
-    "textures": {
-        "bottom": "simplelabels:blocks/vsuBottom",
-        "top": "simplelabels:blocks/vsuTop",
-        "side": "simplelabels:blocks/vsuSide"
-    }
-}
